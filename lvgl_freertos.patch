@@ -1,0 +1,67 @@
+From 3e1d5d840b96f8b76e680bf20619d356562c0bda Mon Sep 17 00:00:00 2001
+From: silverchris <silverchris@gmail.com>
+Date: Sun, 11 Feb 2024 11:35:33 -0500
+Subject: [PATCH] multithread issues
+
+---
+ src/osal/lv_freertos.c | 9 ++++++---
+ src/osal/lv_freertos.h | 6 +++---
+ 2 files changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/src/osal/lv_freertos.c b/src/osal/lv_freertos.c
+index bc3f7d9d87a..123c478fcd0 100644
+--- a/src/osal/lv_freertos.c
++++ b/src/osal/lv_freertos.c
+@@ -16,7 +16,7 @@
+
+ #if LV_USE_OS == LV_OS_FREERTOS
+
+-#include "atomic.h"
++#include "freertos/atomic.h"
+ #include "../misc/lv_log.h"
+
+ /*********************
+@@ -330,13 +330,16 @@ static void prvMutexInit(lv_mutex_t * pxMutex)
+     pxMutex->xIsInitialized = pdTRUE;
+ }
+
++portMUX_TYPE lvgl_portmux = portMUX_INITIALIZER_UNLOCKED;
++
++
+ static void prvCheckMutexInit(lv_mutex_t * pxMutex)
+ {
+     /* Check if the mutex needs to be initialized. */
+     if(pxMutex->xIsInitialized == pdFALSE) {
+         /* Mutex initialization must be in a critical section to prevent two threads
+          * from initializing it at the same time. */
+-        taskENTER_CRITICAL();
++        taskENTER_CRITICAL(&lvgl_portmux);
+
+         /* Check again that the mutex is still uninitialized, i.e. it wasn't
+          * initialized while this function was waiting to enter the critical
+@@ -346,7 +349,7 @@ static void prvCheckMutexInit(lv_mutex_t * pxMutex)
+         }
+
+         /* Exit the critical section. */
+-        taskEXIT_CRITICAL();
++        taskEXIT_CRITICAL(&lvgl_portmux);
+     }
+ }
+
+diff --git a/src/osal/lv_freertos.h b/src/osal/lv_freertos.h
+index 06f98f39a08..537c1324f09 100644
+--- a/src/osal/lv_freertos.h
++++ b/src/osal/lv_freertos.h
+@@ -23,9 +23,9 @@ extern "C" {
+
+ #if LV_USE_OS == LV_OS_FREERTOS
+
+-#include "FreeRTOS.h"
+-#include "task.h"
+-#include "semphr.h"
++#include "freertos/FreeRTOS.h"
++#include "freertos/task.h"
++#include "freertos/semphr.h"
+
+ /*********************
+  *      DEFINES
