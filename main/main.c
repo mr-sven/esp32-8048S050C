@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/semphr.h"
 #include "esp_timer.h"
 #include "esp_lcd_panel_ops.h"
 #include "esp_lcd_panel_rgb.h"
@@ -21,11 +19,11 @@
 
 static const char *TAG = "LVGL";
 
-static SemaphoreHandle_t lvgl_mux = NULL;
 static lv_indev_t * indev_touchpad = NULL;
 
 static void disp_flush(lv_display_t * disp, const lv_area_t * area, uint8_t * px_map)
 {
+    ESP_LOGI(TAG, "flush_cb");
     esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t)lv_display_get_user_data(disp);
     esp_lcd_panel_draw_bitmap(panel_handle, area->x1, area->y1, area->x2 + 1, area->y2 + 1, px_map);
     lv_display_flush_ready(disp);
@@ -186,47 +184,6 @@ static void gt911_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
 }
 
 #define LVGL_TICK_PERIOD_MS    2
-#define LVGL_TASK_MAX_DELAY_MS 500
-#define LVGL_TASK_MIN_DELAY_MS 1
-#define LVGL_TASK_STACK_SIZE   (8 * 1024)
-#define LVGL_TASK_PRIORITY     2
-
-bool lvgl_lock(int timeout_ms)
-{
-    // Convert timeout in milliseconds to FreeRTOS ticks
-    // If `timeout_ms` is set to -1, the program will block until the condition is met
-    const TickType_t timeout_ticks = (timeout_ms == -1) ? portMAX_DELAY : pdMS_TO_TICKS(timeout_ms);
-    return xSemaphoreTakeRecursive(lvgl_mux, timeout_ticks) == pdTRUE;
-}
-
-void lvgl_unlock(void)
-{
-    xSemaphoreGiveRecursive(lvgl_mux);
-}
-
-static void lvgl_port_task(void *arg)
-{
-    uint32_t task_delay_ms = LVGL_TASK_MAX_DELAY_MS;
-    while (1)
-    {
-        // Lock the mutex due to the LVGL APIs are not thread-safe
-        if (lvgl_lock(-1))
-        {
-            task_delay_ms = lv_timer_handler();
-            // Release the mutex
-            lvgl_unlock();
-        }
-        if (task_delay_ms > LVGL_TASK_MAX_DELAY_MS)
-        {
-            task_delay_ms = LVGL_TASK_MAX_DELAY_MS;
-        }
-        else if (task_delay_ms < LVGL_TASK_MIN_DELAY_MS)
-        {
-            task_delay_ms = LVGL_TASK_MIN_DELAY_MS;
-        }
-        vTaskDelay(pdMS_TO_TICKS(task_delay_ms));
-    }
-}
 
 static void lvgl_tick(void *arg)
 {
@@ -280,11 +237,6 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer));
     ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, LVGL_TICK_PERIOD_MS * 1000));
 
-    ESP_LOGI(TAG, "Create LVGL task");
-    lvgl_mux = xSemaphoreCreateRecursiveMutex();
-    assert(lvgl_mux);
-    xTaskCreate(lvgl_port_task, "LVGL", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL);
-
     // init touch i2c bus
     esp_lcd_touch_handle_t touch_handle = lvgl_touch_init();
     indev_touchpad = lv_indev_create();
@@ -292,5 +244,7 @@ void app_main(void)
     lv_indev_set_user_data(indev_touchpad, touch_handle);
     lv_indev_set_read_cb(indev_touchpad, gt911_touchpad_read);
 
-    lv_demo_widgets();
+    lv_obj_t *label = lv_label_create(lv_scr_act());
+    lv_obj_set_pos(label, 240, 240);
+    lv_label_set_text(label, "It works?");
 }
