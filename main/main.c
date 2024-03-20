@@ -82,12 +82,15 @@ void lvgl_lcd_init(lv_display_t *disp)
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
 
     // assign callback and handle
+    ESP_LOGI(TAG, "lv_display_set_user_data");
     lv_display_set_user_data(disp, panel_handle);
+    ESP_LOGI(TAG, "lv_display_set_flush_cb");
     lv_display_set_flush_cb(disp, disp_flush);
 
 #if LCD_NUM_FB == 2
     buffer_size = LCD_WIDTH * LCD_HEIGHT * 2; // 2 = 16bit color data
     esp_lcd_rgb_panel_get_frame_buffer(panel_handle, 2, &buf1, &buf2);
+    ESP_LOGI(TAG, "lv_display_set_buffers");
     lv_display_set_buffers(disp, buf1, buf2, buffer_size, LV_DISPLAY_RENDER_MODE_FULL);
 #else
     buffer_size = LCD_WIDTH * LCD_HEIGHT / 4;
@@ -239,11 +242,13 @@ void app_main(void)
 
     // init touch i2c bus
     esp_lcd_touch_handle_t touch_handle = lvgl_touch_init();
+    ESP_LOGI(TAG, "lv_indev_create");
     indev_touchpad = lv_indev_create();
     lv_indev_set_type(indev_touchpad, LV_INDEV_TYPE_POINTER);
     lv_indev_set_user_data(indev_touchpad, touch_handle);
     lv_indev_set_read_cb(indev_touchpad, gt911_touchpad_read);
 
+    ESP_LOGI(TAG, "lv_label_create");
     lv_obj_t *label = lv_label_create(lv_scr_act());
     lv_obj_set_pos(label, 240, 240);
     lv_label_set_text(label, "It works?");
