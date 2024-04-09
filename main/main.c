@@ -294,8 +294,12 @@ void app_main(void)
     lv_indev_set_user_data(indev_touchpad, touch_handle);
     lv_indev_set_read_cb(indev_touchpad, gt911_touchpad_read);
 
-    ESP_LOGI(TAG, "lv_label_create");
-    lv_obj_t *label = lv_label_create(lv_scr_act());
-    lv_obj_set_pos(label, 240, 240);
-    lv_label_set_text(label, "It works?");
+    if (lvgl_lock(-1))
+    {
+        ESP_LOGI(TAG, "lv_label_create");
+        lv_obj_t *label = lv_label_create(lv_scr_act());
+        lv_obj_set_pos(label, 240, 240);
+        lv_label_set_text(label, "It works?");
+        lvgl_unlock();
+    }
 }
