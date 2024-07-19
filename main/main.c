@@ -91,7 +91,7 @@ void lvgl_lcd_init(lv_display_t *disp)
     buffer_size = LCD_WIDTH * LCD_HEIGHT * 2; // 2 = 16bit color data
     esp_lcd_rgb_panel_get_frame_buffer(panel_handle, 2, &buf1, &buf2);
     ESP_LOGI(TAG, "lv_display_set_buffers");
-    lv_display_set_buffers(disp, buf1, buf2, buffer_size, LV_DISPLAY_RENDER_MODE_FULL);
+    lv_display_set_buffers(disp, buf1, buf2, buffer_size, LV_DISPLAY_RENDER_MODE_DIRECT);
 #else
     buffer_size = LCD_WIDTH * LCD_HEIGHT / 4;
     buf1 = heap_caps_malloc(sizeof(lv_color_t) * buffer_size, MALLOC_CAP_SPIRAM);
@@ -215,6 +215,8 @@ void lvgl_unlock(void)
 
 static void lvgl_port_task(void *arg)
 {
+    lv_draw_init();
+
     uint32_t task_delay_ms = LVGL_TASK_MAX_DELAY_MS;
     while (1)
     {
