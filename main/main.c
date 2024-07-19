@@ -21,9 +21,8 @@ static const char *TAG = "LVGL";
 
 static lv_indev_t * indev_touchpad = NULL;
 
-static void disp_flush(lv_display_t * disp, const lv_area_t * area, uint8_t * px_map)
+static void lvgl_disp_flush(lv_display_t * disp, const lv_area_t * area, uint8_t * px_map)
 {
-    ESP_LOGI(TAG, "flush_cb");
     esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t)lv_display_get_user_data(disp);
     esp_lcd_panel_draw_bitmap(panel_handle, area->x1, area->y1, area->x2 + 1, area->y2 + 1, px_map);
     lv_display_flush_ready(disp);
@@ -82,15 +81,12 @@ void lvgl_lcd_init(lv_display_t *disp)
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
 
     // assign callback and handle
-    ESP_LOGI(TAG, "lv_display_set_user_data");
     lv_display_set_user_data(disp, panel_handle);
-    ESP_LOGI(TAG, "lv_display_set_flush_cb");
-    lv_display_set_flush_cb(disp, disp_flush);
+    lv_display_set_flush_cb(disp, lvgl_disp_flush);
 
 #if LCD_NUM_FB == 2
     buffer_size = LCD_WIDTH * LCD_HEIGHT * 2; // 2 = 16bit color data
     esp_lcd_rgb_panel_get_frame_buffer(panel_handle, 2, &buf1, &buf2);
-    ESP_LOGI(TAG, "lv_display_set_buffers");
     lv_display_set_buffers(disp, buf1, buf2, buffer_size, LV_DISPLAY_RENDER_MODE_DIRECT);
 #else
     buffer_size = LCD_WIDTH * LCD_HEIGHT / 4;
@@ -215,6 +211,7 @@ void lvgl_unlock(void)
 
 static void lvgl_port_task(void *arg)
 {
+    // required to ensure the notify task ID is correct
     lv_draw_init();
 
     uint32_t task_delay_ms = LVGL_TASK_MAX_DELAY_MS;
@@ -265,16 +262,12 @@ void app_main(void)
     ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0,(uint32_t)(256/(100/100.00))-1);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
 
-    ESP_LOGI(TAG, "lv_init");
     lv_init();
 
-    ESP_LOGI(TAG, "lv_display_create");
     lv_display_t * disp = lv_display_create(LCD_WIDTH, LCD_HEIGHT);
 
-    ESP_LOGI(TAG, "lvgl_lcd_init");
     lvgl_lcd_init(disp);
 
-    ESP_LOGI(TAG, "Install LVGL tick timer");
     // Tick interface for LVGL (using esp_timer to generate 2ms periodic event)
     const esp_timer_create_args_t lvgl_tick_timer_args = {
         .callback = &lvgl_tick,
@@ -284,28 +277,19 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer));
     ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, LVGL_TICK_PERIOD_MS * 1000));
 
-    ESP_LOGI(TAG, "lvgl_port_task");
     lvgl_mux = xSemaphoreCreateRecursiveMutex();
     xTaskCreate(lvgl_port_task, "lvgl_port_task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL);
 
     // init touch i2c bus
     esp_lcd_touch_handle_t touch_handle = lvgl_touch_init();
-    ESP_LOGI(TAG, "lv_indev_create");
     indev_touchpad = lv_indev_create();
     lv_indev_set_type(indev_touchpad, LV_INDEV_TYPE_POINTER);
     lv_indev_set_user_data(indev_touchpad, touch_handle);
     lv_indev_set_read_cb(indev_touchpad, gt911_touchpad_read);
 
-    ESP_LOGI(TAG, "lvgl_lock");
     if (lvgl_lock(-1))
     {
-        ESP_LOGI(TAG, "lv_label_create");
-        lv_obj_t *label = lv_label_create(lv_scr_act());
-        ESP_LOGI(TAG, "lv_obj_set_pos");
-        lv_obj_set_pos(label, 240, 240);
-        ESP_LOGI(TAG, "lv_label_set_text");
-        lv_label_set_text(label, "It works?");
-        ESP_LOGI(TAG, "lvgl_unlock");
+        lv_demo_widgets();
         lvgl_unlock();
     }
 }
