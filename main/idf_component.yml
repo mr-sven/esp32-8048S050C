@@ -1,7 +1,9 @@
 ## IDF Component Manager Manifest File
 dependencies:
   espressif/esp_lcd_touch_gt911: "^1.1.0"
-  lvgl/lvgl: "^9.1.0"
+  lvgl/lvgl:
+    #version: "^9.1.0"
+    git: https://github.com/lvgl/lvgl.git
 
   ## Required IDF version
   idf:

@@ -188,25 +188,10 @@ static void gt911_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
 #define LVGL_TASK_STACK_SIZE   (8 * 1024)
 #define LVGL_TASK_PRIORITY     2
 
-static SemaphoreHandle_t lvgl_mux = NULL;
-
 static void lvgl_tick(void *arg)
 {
     /* Tell LVGL how many milliseconds has elapsed */
     lv_tick_inc(LVGL_TICK_PERIOD_MS);
-}
-
-bool lvgl_lock(int timeout_ms)
-{
-    // Convert timeout in milliseconds to FreeRTOS ticks
-    // If `timeout_ms` is set to -1, the program will block until the condition is met
-    const TickType_t timeout_ticks = (timeout_ms == -1) ? portMAX_DELAY : pdMS_TO_TICKS(timeout_ms);
-    return xSemaphoreTakeRecursive(lvgl_mux, timeout_ticks) == pdTRUE;
-}
-
-void lvgl_unlock(void)
-{
-    xSemaphoreGiveRecursive(lvgl_mux);
 }
 
 static void lvgl_port_task(void *arg)
@@ -217,13 +202,7 @@ static void lvgl_port_task(void *arg)
     uint32_t task_delay_ms = LVGL_TASK_MAX_DELAY_MS;
     while (1)
     {
-        // Lock the mutex due to the LVGL APIs are not thread-safe
-        if (lvgl_lock(-1))
-        {
-            task_delay_ms = lv_timer_handler();
-            // Release the mutex
-            lvgl_unlock();
-        }
+        task_delay_ms = lv_timer_handler();
         if (task_delay_ms > LVGL_TASK_MAX_DELAY_MS)
         {
             task_delay_ms = LVGL_TASK_MAX_DELAY_MS;
@@ -277,7 +256,6 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer));
     ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, LVGL_TICK_PERIOD_MS * 1000));
 
-    lvgl_mux = xSemaphoreCreateRecursiveMutex();
     xTaskCreate(lvgl_port_task, "lvgl_port_task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL);
 
     // init touch i2c bus
@@ -287,9 +265,7 @@ void app_main(void)
     lv_indev_set_user_data(indev_touchpad, touch_handle);
     lv_indev_set_read_cb(indev_touchpad, gt911_touchpad_read);
 
-    if (lvgl_lock(-1))
-    {
-        lv_demo_widgets();
-        lvgl_unlock();
-    }
+    lv_lock();
+    lv_demo_widgets();
+    lv_unlock();
 }
