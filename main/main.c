@@ -16,8 +16,9 @@
 
 #define LCD_WIDTH               800
 #define LCD_HEIGHT              480
-#define LCD_NUM_FB              2
 #define LCD_GPIO_BCKL           GPIO_NUM_2
+
+#define LCD_DOUBLE_FB           1
 
 static const char *TAG = "LVGL";
 
@@ -34,13 +35,19 @@ static void disp_flush(lv_display_t * disp, const lv_area_t * area, uint8_t * px
 void lvgl_lcd_init(lv_display_t *disp)
 {
     void *buf1 = NULL;
+#if LCD_DOUBLE_FB
     void *buf2 = NULL;
+#endif
     int buffer_size;
     esp_lcd_panel_handle_t panel_handle = NULL;
 
     const esp_lcd_rgb_panel_config_t st7262_panel_config = {
         .data_width = 16,
-        .num_fbs = LCD_NUM_FB,
+#if LCD_DOUBLE_FB
+        .num_fbs = 2,
+#else
+        .num_fbs = 1,
+#endif
         .clk_src = LCD_CLK_SRC_PLL160M,
         .timings = {
             .pclk_hz = (16*1000000),
@@ -87,14 +94,14 @@ void lvgl_lcd_init(lv_display_t *disp)
     lv_display_set_user_data(disp, panel_handle);
     lv_display_set_flush_cb(disp, disp_flush);
 
-#if LCD_NUM_FB == 2
     buffer_size = LCD_WIDTH * LCD_HEIGHT * 2; // 2 = 16bit color data
+#if LCD_DOUBLE_FB
     esp_lcd_rgb_panel_get_frame_buffer(panel_handle, 2, &buf1, &buf2);
-    lv_display_set_buffers(disp, buf1, buf2, buffer_size, LV_DISPLAY_RENDER_MODE_FULL);
+    lv_display_set_buffers(disp, buf1, buf2, buffer_size, LV_DISPLAY_RENDER_MODE_DIRECT);
 #else
-    buffer_size = LCD_WIDTH * LCD_HEIGHT / 4;
-    buf1 = heap_caps_malloc(sizeof(lv_color_t) * buffer_size, MALLOC_CAP_SPIRAM);
-    lv_display_set_buffers(disp, buf1, buf2, buffer_size, LV_DISPLAY_RENDER_MODE_PARTIAL);
+    buffer_size = buffer_size / 10;
+    buf1 = heap_caps_malloc(buffer_size, MALLOC_CAP_SPIRAM);
+    lv_display_set_buffers(disp, buf1, NULL, buffer_size, LV_DISPLAY_RENDER_MODE_PARTIAL);
 #endif
 }
 
@@ -237,7 +244,6 @@ static void lvgl_tick(void *arg)
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "Turn on LCD backlight");
     ledc_timer_config_t ledc_timer = {
             .speed_mode       = LEDC_LOW_SPEED_MODE,
             .duty_resolution  = LEDC_TIMER_8_BIT,
@@ -261,16 +267,10 @@ void app_main(void)
     ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0,(uint32_t)(256/(100/100.00))-1);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
 
-    ESP_LOGI(TAG, "lv_init");
     lv_init();
-
-    ESP_LOGI(TAG, "lv_display_create");
     lv_display_t * disp = lv_display_create(LCD_WIDTH, LCD_HEIGHT);
-
-    ESP_LOGI(TAG, "lvgl_lcd_init");
     lvgl_lcd_init(disp);
 
-    ESP_LOGI(TAG, "Install LVGL tick timer");
     // Tick interface for LVGL (using esp_timer to generate 2ms periodic event)
     const esp_timer_create_args_t lvgl_tick_timer_args = {
         .callback = &lvgl_tick,
@@ -280,7 +280,6 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer));
     ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, LVGL_TICK_PERIOD_MS * 1000));
 
-    ESP_LOGI(TAG, "Create LVGL task");
     lvgl_mux = xSemaphoreCreateRecursiveMutex();
     assert(lvgl_mux);
     xTaskCreate(lvgl_port_task, "LVGL", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL);
