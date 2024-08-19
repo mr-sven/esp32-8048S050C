@@ -18,24 +18,56 @@
 
 #define LCD_DOUBLE_FB           1
 
-
 static const char *TAG = "LVGL";
 
 static lv_indev_t * indev_touchpad = NULL;
+static TaskHandle_t lvgl_port_task_handle = NULL;
+
+IRAM_ATTR bool lvgl_port_task_notify(uint32_t value)
+{
+    BaseType_t need_yield = pdFALSE;
+
+    // Notify LVGL task
+    if (xPortInIsrContext() == pdTRUE)
+    {
+        xTaskNotifyFromISR(lvgl_port_task_handle, value, eNoAction, &need_yield);
+    }
+    else
+    {
+        xTaskNotify(lvgl_port_task_handle, value, eNoAction);
+    }
+
+    return (need_yield == pdTRUE);
+}
+
+static bool lvgl_port_flush_vsync_ready_callback(esp_lcd_panel_handle_t panel_io, const esp_lcd_rgb_panel_event_data_t *edata, void *user_ctx)
+{
+    BaseType_t need_yield = pdFALSE;
+
+    lv_display_t *disp_drv = (lv_display_t *)user_ctx;
+    assert(disp_drv != NULL);
+    need_yield = lvgl_port_task_notify(ULONG_MAX);
+
+    return (need_yield == pdTRUE);
+}
 
 static void lvgl_disp_flush(lv_display_t * disp, const lv_area_t * area, uint8_t * px_map)
 {
     esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t)lv_display_get_user_data(disp);
-    esp_lcd_panel_draw_bitmap(panel_handle, area->x1, area->y1, area->x2 + 1, area->y2 + 1, px_map);
+    if (lv_display_flush_is_last(disp))
+    {
+        esp_lcd_panel_draw_bitmap(panel_handle, area->x1, area->y1, area->x2 + 1, area->y2 + 1, px_map);
+        /* Waiting for the last frame buffer to complete transmission */
+        ulTaskNotifyValueClear(NULL, ULONG_MAX);
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    }
     lv_display_flush_ready(disp);
 };
 
 void lvgl_lcd_init(lv_display_t *disp)
 {
     void *buf1 = NULL;
-#if LCD_DOUBLE_FB
     void *buf2 = NULL;
-#endif
     int buffer_size;
     esp_lcd_panel_handle_t panel_handle = NULL;
 
@@ -88,18 +120,25 @@ void lvgl_lcd_init(lv_display_t *disp)
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
 
+    /* Register done callback */
+    const esp_lcd_rgb_panel_event_callbacks_t vsync_cbs = {
+        .on_vsync = lvgl_port_flush_vsync_ready_callback,
+    };
+    ESP_ERROR_CHECK(esp_lcd_rgb_panel_register_event_callbacks(panel_handle, &vsync_cbs, disp));
+
     // assign callback and handle
     lv_display_set_user_data(disp, panel_handle);
     lv_display_set_flush_cb(disp, lvgl_disp_flush);
 
-    buffer_size = LCD_WIDTH * LCD_HEIGHT * 2; // 2 = 16bit color data
+    buffer_size = LCD_WIDTH * LCD_HEIGHT * sizeof(lv_color_t); // 2 = 16bit color data
 #if LCD_DOUBLE_FB
     esp_lcd_rgb_panel_get_frame_buffer(panel_handle, 2, &buf1, &buf2);
     lv_display_set_buffers(disp, buf1, buf2, buffer_size, LV_DISPLAY_RENDER_MODE_DIRECT);
 #else
-    buffer_size = buffer_size / 10;
+    //buffer_size = buffer_size / 10;
     buf1 = heap_caps_malloc(buffer_size, MALLOC_CAP_SPIRAM);
-    lv_display_set_buffers(disp, buf1, NULL, buffer_size, LV_DISPLAY_RENDER_MODE_PARTIAL);
+    buf2 = heap_caps_malloc(buffer_size, MALLOC_CAP_SPIRAM);
+    lv_display_set_buffers(disp, buf1, buf2, buffer_size, LV_DISPLAY_RENDER_MODE_PARTIAL);
 #endif
 }
 
@@ -124,6 +163,8 @@ esp_lcd_touch_handle_t lvgl_touch_init(void)
         .scl_io_num = GPIO_NUM_20,
         .sda_io_num = GPIO_NUM_19,
         .glitch_ignore_cnt = 7,
+        // not required, external pullups R3 / R4 in place
+        //.flags.enable_internal_pullup = 1,
     };
     ESP_ERROR_CHECK(i2c_new_master_bus(&touch_i2c_bus_config, &touch_i2c_bus_handle));
 
@@ -145,11 +186,15 @@ esp_lcd_touch_handle_t lvgl_touch_init(void)
     ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(touch_i2c_bus_handle, &gt911_touch_io_config, &gt911_touch_io_handle));
 
     esp_lcd_touch_handle_t touch_handle = NULL;
+    // R5 is bound to VCC so GT911 has I2C address 0x14
+    esp_lcd_touch_io_gt911_config_t tp_gt911_config = {
+        .dev_addr = 0x14,
+    };
     const esp_lcd_touch_config_t gt911_touch_cfg = {
         .x_max = LCD_WIDTH,
         .y_max = LCD_HEIGHT,
         .rst_gpio_num = GPIO_NUM_38,
-        .int_gpio_num = GPIO_NUM_NC,
+        .int_gpio_num = GPIO_NUM_18,
         .levels = {
             .reset = 0,
             .interrupt = 0,
@@ -159,6 +204,7 @@ esp_lcd_touch_handle_t lvgl_touch_init(void)
             .mirror_x = 0,
             .mirror_y = 0,
         },
+        .driver_data = &tp_gt911_config,
         .process_coordinates = process_coordinates, // callback to fix coordinates between gt911 and display
         .interrupt_callback = NULL,
     };
@@ -264,7 +310,7 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer));
     ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, LVGL_TICK_PERIOD_MS * 1000));
 
-    xTaskCreate(lvgl_port_task, "lvgl_port_task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL);
+    xTaskCreate(lvgl_port_task, "lvgl_port_task", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, &lvgl_port_task_handle);
 
     // init touch i2c bus
     esp_lcd_touch_handle_t touch_handle = lvgl_touch_init();

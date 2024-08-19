@@ -15,14 +15,14 @@ dependencies:
     component_hash: null
     source:
       type: idf
-    version: 5.2.2
+    version: 5.3.0
   lvgl/lvgl:
-    component_hash: e60f2f295cbfdae7b85f9ee456ec5cc4a2adb58afd794cc45b0ab01e2450d545
+    component_hash: e988f7f420759b956a9601b3e1f26f8193f9514fdb35981394a9c3d0c9594342
     source:
       git: https://github.com/lvgl/lvgl.git
       path: .
       type: git
-    version: f36890102fbbda2d1edddd9006c08d787f0acca8
-manifest_hash: 1f09f33b37858685133382690c404e82b1854a3225f250958887254da67ca009
+    version: 44eb318d54ee56e35b5ff4084a05edb1d5d159de
+manifest_hash: f7d5243b34e70babfbcdad6f242f54f447c4377bdd36be2b72d5f6f2a259a71d
 target: esp32s3
 version: 1.0.0

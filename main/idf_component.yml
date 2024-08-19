@@ -3,6 +3,11 @@ dependencies:
   espressif/esp_lcd_touch_gt911: "^1.1.0"
   lvgl/lvgl:
     #version: "^9.1.0"
+    # Commits on Aug 15, 2024
+    version: 44eb318d54ee56e35b5ff4084a05edb1d5d159de
+    # NOK
+    # version: c37ad551604abcdb4f1d7c2296910b41cf175180
+    # version: d7b82c79668d7b31d52f6535360eff15396eade5
     git: https://github.com/lvgl/lvgl.git
 
   ## Required IDF version
