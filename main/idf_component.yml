@@ -4,23 +4,14 @@ dependencies:
   lvgl/lvgl:
     #version: "^9.1.0"
     # Commits on Aug 15, 2024
-    version: 44eb318d54ee56e35b5ff4084a05edb1d5d159de
+    #version: 44eb318d54ee56e35b5ff4084a05edb1d5d159de
     # NOK
     # version: c37ad551604abcdb4f1d7c2296910b41cf175180
     # version: d7b82c79668d7b31d52f6535360eff15396eade5
-    git: https://github.com/lvgl/lvgl.git
+    #git: https://github.com/lvgl/lvgl.git
+    git: https://github.com/XuNeo/lvgl.git
+    version: t50
 
   ## Required IDF version
   idf:
     version: ">=5.2.0"
-  # # Put list of dependencies here
-  # # For components maintained by Espressif:
-  # component: "~1.0.0"
-  # # For 3rd party components:
-  # username/component: ">=1.0.0,<2.0.0"
-  # username2/component2:
-  #   version: "~1.0.0"
-  #   # For transient dependencies `public` flag can be set.
-  #   # `public` flag doesn't have an effect dependencies of the `main` component.
-  #   # All dependencies of `main` are public by default.
-  #   public: true
