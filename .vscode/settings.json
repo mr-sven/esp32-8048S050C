@@ -7,7 +7,8 @@
     ],
     "files.associations": {
         "lcd_backlight.h": "c",
-        "lcd_touch.h": "c"
+        "lcd_touch.h": "c",
+        "esp_lcd_touch.h": "c"
     },
     "idf.flashType": "UART",
     "idf.port": "/dev/ttyUSB0",

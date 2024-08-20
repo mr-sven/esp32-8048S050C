@@ -10,7 +10,7 @@
 #include "demos/lv_demos.h"
 
 #include "lcd_backlight.h"
-#include "lcd_touch.h"
+#include "touch.h"
 
 #define LCD_WIDTH                   800
 #define LCD_HEIGHT                  480
@@ -192,7 +192,7 @@ static void lvgl_init_touch(void)
 {
     indev_touchpad = lv_indev_create();
     lv_indev_set_type(indev_touchpad, LV_INDEV_TYPE_POINTER);
-    lv_indev_set_user_data(indev_touchpad, lcd_touch_init(LCD_WIDTH, LCD_HEIGHT));
+    lv_indev_set_user_data(indev_touchpad, touch_init(LCD_WIDTH, LCD_HEIGHT));
     lv_indev_set_read_cb(indev_touchpad, touchpad_read);
 }
 //endregion
