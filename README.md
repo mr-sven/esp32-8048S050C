@@ -26,4 +26,5 @@ idf.py set-target esp32s3 idf.py build flash monitor
 * [Test](../../tree/lvgl-test) - Implementation FreeRTOS OSAL LVGL git master
   * LVGL git master branch
   * LVGL requires 128kb RAM for demo widgets
-  * Bar animation is a bit flickery
+  * Direct rendering is now glitchfree
+  * Packed stuff to component library, waiting on contributers to extend board configs
