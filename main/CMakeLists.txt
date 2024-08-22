@@ -1,3 +1,3 @@
-idf_component_register(SRCS "lcd_backlight.c" "main.c"
+idf_component_register(SRCS "main.c"
                     INCLUDE_DIRS "."
-                    REQUIRES lvgl esp_lcd touch)
+                    REQUIRES lvgl sunton_esp32s3_lvgl)

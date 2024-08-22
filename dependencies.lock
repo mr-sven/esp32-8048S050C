@@ -17,12 +17,12 @@ dependencies:
       type: idf
     version: 5.3.0
   lvgl/lvgl:
-    component_hash: a8dee8714e52f93c8a36380b4102993525262a6d6e36678a8c661cc1561c4a4e
+    component_hash: 7cc762534ccb259015ec6b5793c12d6b392283ffedc3454b15891c224617fc74
     source:
-      git: https://github.com/XuNeo/lvgl.git
+      git: https://github.com/lvgl/lvgl.git
       path: .
       type: git
-    version: fd26b8f0b7718f48e4a3991e64a4e6e4f2f092ec
-manifest_hash: 92d76f197558ae95c022b66ae5c4767b728c6d9f3e635f76fd032fe0922e5fea
+    version: bac9b29b77a062923c24862d43b9a5cda0d9bbb3
+manifest_hash: 9dbaaf0db6fc3a8efb554bf0406deaadb868ba5e44abf1b98d6f95fa1360cdde
 target: esp32s3
 version: 1.0.0

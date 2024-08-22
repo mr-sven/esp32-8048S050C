@@ -1,5 +1,5 @@
 /**
- * @file lcd_backlight.c
+ * @file backlight.c
  * @author Sven Fabricius (sven.fabricius@livediesel.de)
  * @brief
  * @version 0.1
@@ -10,16 +10,14 @@
  */
 
 #include "freertos/FreeRTOS.h"
-#include "esp_log.h"
+
 #include "driver/ledc.h"
 
-#include "lcd_backlight.h"
+#include "sunton_esp32s3.h"
 
-static const char *TAG = "LCDBL";
-
-void lcd_backlight_init(void)
+//TODO: Add more configs for LEDC Channel etc.
+void sunton_esp32s3_backlight_init(void)
 {
-    ESP_LOGI(TAG, "Turn on LCD backlight");
     ledc_timer_config_t ledc_timer = {
         .speed_mode      = LEDC_LOW_SPEED_MODE,
         .duty_resolution = LEDC_TIMER_8_BIT,
@@ -31,7 +29,7 @@ void lcd_backlight_init(void)
 
     // Prepare and then apply the LEDC PWM channel configuration
     ledc_channel_config_t ledc_channel = {
-        .gpio_num   = LCD_GPIO_BCKL,
+        .gpio_num   = CONFIG_SUNTON_ESP32_PIN_BCKL,
         .speed_mode = LEDC_LOW_SPEED_MODE,
         .channel    = LEDC_CHANNEL_0,
         .intr_type  = LEDC_INTR_DISABLE,
