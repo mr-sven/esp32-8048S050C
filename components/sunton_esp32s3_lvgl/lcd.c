@@ -106,7 +106,7 @@ lv_display_t *sunton_esp32s3_lcd_init(void)
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
 
     // assign callback and handle
-
+    lv_init();
     lv_display_t * disp = lv_display_create(CONFIG_SUNTON_ESP32_LCD_WIDTH, CONFIG_SUNTON_ESP32_LCD_HEIGHT);
     lv_display_set_user_data(disp, panel_handle);
     lv_display_set_flush_cb(disp, lvgl_disp_flush);
