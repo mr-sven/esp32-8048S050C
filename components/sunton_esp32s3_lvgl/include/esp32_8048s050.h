@@ -23,8 +23,9 @@
     #define CONFIG_SUNTON_ESP32_TOUCH_PIN_RST      GPIO_NUM_38
     #define CONFIG_SUNTON_ESP32_TOUCH_PIN_INT      GPIO_NUM_18
 
-    // R5 is bound to VCC so GT911 has I2C address 0x14
-    #define CONFIG_SUNTON_ESP32_TOUCH_ADDRESS      ESP_LCD_TOUCH_IO_I2C_GT911_ADDRESS_BACKUP
+    // R5 is bound to VCC so GT911 should have I2C address 0x14, but GPIO18 is pulled down on init, so its 0x5D
+    #define CONFIG_SUNTON_ESP32_TOUCH_ADDRESS      ESP_LCD_TOUCH_IO_I2C_GT911_ADDRESS
+    //_BACKUP
 
     // not required, external pullups R3 / R4 in place
     // #define CONFIG_SUNTON_ESP32_TOUCH_I2C_PULLUP  y
