@@ -1,6 +1,6 @@
 # ESP32-8048S050C
 
-**Implementation with FreeRTOS OSAL and LVGL master**
+**Implementation with FreeRTOS OSAL and LVGL 9.2**
 
 Sunton ESP32-S3 800x480 Capacitive touch display
 
