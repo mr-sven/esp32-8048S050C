@@ -1,0 +1,29 @@
+menu "Sunton ESP32-S3 based display LVGL Package config"
+
+    orsource "$IDF_PATH/examples/common_components/env_caps/$IDF_TARGET/Kconfig.env_caps"
+
+    config SUNTON_ESP32_DOUBLE_FB
+        bool "Use Double Frame Buffer"
+        default y
+
+    config SUNTON_ESP32_DOUBLE_FB_TEARING
+        bool "Avoid tearing effect"
+        depends on SUNTON_ESP32_DOUBLE_FB
+        default y
+
+    config LVGL_TASK_MAX_DELAY_MS
+        int "LVGL Port Task max delay in MS"
+        default 500
+
+    config LVGL_TASK_MIN_DELAY_MS
+        int "LVGL Port Task min delay in MS"
+        default 1
+
+    config LVGL_TASK_STACK_SIZE
+        int "LVGL Port Task stack size in KB"
+        default 8
+
+    config LVGL_TASK_PRIORITY
+        int "LVGL Port Task prio"
+        default 3
+endmenu
