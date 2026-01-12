@@ -248,17 +248,16 @@ static void touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
 {
     esp_lcd_touch_handle_t tp = (esp_lcd_touch_handle_t)lv_indev_get_user_data(indev);
 
-    uint16_t touchpad_x;
-    uint16_t touchpad_y;
+    esp_lcd_touch_point_data_t data_point;
     uint8_t touchpad_cnt = 0;
 
     esp_lcd_touch_read_data(tp);
 
-    bool touchpad_pressed = esp_lcd_touch_get_coordinates(tp, &touchpad_x, &touchpad_y, NULL, &touchpad_cnt, 1);
+    bool touchpad_pressed = esp_lcd_touch_get_data(tp, &data_point, &touchpad_cnt, 1);
     if (touchpad_pressed && touchpad_cnt > 0)
     {
-        data->point.x = touchpad_x;
-        data->point.y = touchpad_y;
+        data->point.x = data_point.x;
+        data->point.y = data_point.y;
         data->state = LV_INDEV_STATE_PRESSED;
     }
     else
