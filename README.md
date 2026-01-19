@@ -1,6 +1,6 @@
 # ESP32-8048S050C
 
-**Implementation with FreeRTOS OSAL and LVGL 9.3**
+**Implementation with FreeRTOS OSAL and LVGL 9.4**
 
 Sunton ESP32-S3 800x480 Capacitive touch display
 
@@ -16,7 +16,7 @@ idf.py set-target esp32s3 idf.py build flash monitor
 ## Branches
 
 * [Main](../../tree/main)
-  * LVGL 9.3.0
+  * LVGL 9.4.0
   * LVGL requires 128kb RAM for demo widgets
   * can use OSAL via `CONFIG_LV_OS_FREERTOS`
   * can use double-FB and direct rendering
