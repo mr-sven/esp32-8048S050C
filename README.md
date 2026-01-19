@@ -13,6 +13,10 @@ In gt911_touch_init, a callback is registered to map the measured touch coordina
 
 idf.py set-target esp32s3 idf.py build flash monitor
 
+## Additional infos
+
+The pixelclock is reduced to 14MHz and the disply timings are maxed out. Using higher frequencies distube the pixel data due to transfer issues between PSRAM, DMA and LCD interface in double frambuffer mode. (WIP)
+
 ## Branches
 
 * [Main](../../tree/main)
