@@ -23,6 +23,7 @@
 
 const esp_lcd_rgb_panel_config_t panel_config = {
     .data_width = 16,
+    .bits_per_pixel = 16,
 #if CONFIG_SUNTON_ESP32_DOUBLE_FB
     .num_fbs = 2,
 #else
@@ -30,37 +31,31 @@ const esp_lcd_rgb_panel_config_t panel_config = {
 #endif
     .clk_src = LCD_CLK_SRC_PLL160M,
     .timings = {
-        .pclk_hz = (16*1000000),
+        .pclk_hz = (14*1000000),
         .h_res = SUNTON_ESP32_LCD_WIDTH,
         .v_res = SUNTON_ESP32_LCD_HEIGHT,
-        .hsync_pulse_width = 4,
-        .hsync_back_porch = 8,
-        .hsync_front_porch = 8,
-        .vsync_pulse_width = 4,
-        .vsync_back_porch = 8,
-        .vsync_front_porch = 8,
+        .hsync_pulse_width = 7,
+        .hsync_back_porch = 40,
+        .hsync_front_porch = 40,
+        .vsync_pulse_width = 7,
+        .vsync_back_porch = 10,
+        .vsync_front_porch = 10,
         .flags = {
-            .hsync_idle_low = true,
-            .vsync_idle_low = true,
-            .de_idle_high = false,
             .pclk_active_neg = true,
-            .pclk_idle_high = false,
         },
     },
-    .sram_trans_align = 8,
-    .psram_trans_align = 64,
+    .dma_burst_size = 64,
     .hsync_gpio_num = GPIO_NUM_39,
     .vsync_gpio_num = GPIO_NUM_41,
     .de_gpio_num = GPIO_NUM_40,
     .pclk_gpio_num = GPIO_NUM_42,
     .data_gpio_nums = {
-        GPIO_NUM_8, GPIO_NUM_3, GPIO_NUM_4, GPIO_NUM_9, GPIO_NUM_1,               // B0 - B4
+        GPIO_NUM_8, GPIO_NUM_3, GPIO_NUM_46, GPIO_NUM_9, GPIO_NUM_1,              // B0 - B4
         GPIO_NUM_5, GPIO_NUM_6, GPIO_NUM_7, GPIO_NUM_15, GPIO_NUM_16, GPIO_NUM_4, // G0 - G5
         GPIO_NUM_45, GPIO_NUM_48, GPIO_NUM_47, GPIO_NUM_21, GPIO_NUM_14,          // R0 - R4
     },
     .disp_gpio_num = GPIO_NUM_NC,
     .flags = {
-        .disp_active_low = false,
         .fb_in_psram = true,
     },
 };
@@ -125,8 +120,10 @@ static void lvgl_disp_flush(lv_display_t * disp, const lv_area_t * area, uint8_t
 #if CONFIG_SUNTON_ESP32_DOUBLE_FB_TEARING
     if (lv_display_flush_is_last(disp))
     {
-#endif
+        esp_lcd_panel_draw_bitmap(panel_handle, 0, 0, lv_disp_get_hor_res(disp), lv_disp_get_ver_res(disp), px_map);
+#else
         esp_lcd_panel_draw_bitmap(panel_handle, area->x1, area->y1, area->x2 + 1, area->y2 + 1, px_map);
+#endif
 #if CONFIG_SUNTON_ESP32_DOUBLE_FB_TEARING
         /* Waiting for the last frame buffer to complete transmission */
         ulTaskNotifyValueClear(NULL, ULONG_MAX);
@@ -248,17 +245,16 @@ static void touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
 {
     esp_lcd_touch_handle_t tp = (esp_lcd_touch_handle_t)lv_indev_get_user_data(indev);
 
-    uint16_t touchpad_x;
-    uint16_t touchpad_y;
+    esp_lcd_touch_point_data_t data_point;
     uint8_t touchpad_cnt = 0;
 
     esp_lcd_touch_read_data(tp);
 
-    bool touchpad_pressed = esp_lcd_touch_get_coordinates(tp, &touchpad_x, &touchpad_y, NULL, &touchpad_cnt, 1);
-    if (touchpad_pressed && touchpad_cnt > 0)
+    esp_lcd_touch_get_data(tp, &data_point, &touchpad_cnt, 1);
+    if (touchpad_cnt > 0)
     {
-        data->point.x = touchpad_x;
-        data->point.y = touchpad_y;
+        data->point.x = data_point.x;
+        data->point.y = data_point.y;
         data->state = LV_INDEV_STATE_PRESSED;
     }
     else

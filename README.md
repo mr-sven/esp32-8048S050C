@@ -1,6 +1,6 @@
 # ESP32-8048S050C
 
-**Implementation with FreeRTOS OSAL and LVGL 9.3**
+**Implementation with FreeRTOS OSAL and LVGL 9.4**
 
 Sunton ESP32-S3 800x480 Capacitive touch display
 
@@ -13,10 +13,14 @@ In gt911_touch_init, a callback is registered to map the measured touch coordina
 
 idf.py set-target esp32s3 idf.py build flash monitor
 
+## Additional infos
+
+The pixelclock is reduced to 14MHz and the disply timings are maxed out. Using higher frequencies distube the pixel data due to transfer issues between PSRAM, DMA and LCD interface in double frambuffer mode. (WIP)
+
 ## Branches
 
 * [Main](../../tree/main)
-  * LVGL 9.3.0
+  * LVGL 9.4.0
   * LVGL requires 128kb RAM for demo widgets
   * can use OSAL via `CONFIG_LV_OS_FREERTOS`
   * can use double-FB and direct rendering
