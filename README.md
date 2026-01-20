@@ -4,7 +4,7 @@
 
 Sunton ESP32-S3 800x480 Capacitive touch display
 
-Example using esp-idf 5.5 and the esp_lcd_touch_gt911 and lvgl components.
+Example using esp-idf 5.5.2 and the esp_lcd_touch_gt911 and lvgl components.
 
 In gt911_touch_init, a callback is registered to map the measured touch coordinates to display coordinates, see header file for information.
 
@@ -13,9 +13,24 @@ In gt911_touch_init, a callback is registered to map the measured touch coordina
 
 idf.py set-target esp32s3 idf.py build flash monitor
 
-## Additional infos
+## Additional infos and limitations
 
-The pixelclock is reduced to 14MHz and the disply timings are maxed out. Using higher frequencies distube the pixel data due to transfer issues between PSRAM, DMA and LCD interface in double frambuffer mode. (WIP)
+Due the reduced size of internal RAM of the ESP32S3, the framebuffer cannot be located in internal RAM.
+
+This limitation leads to transfer problems via the DMA. Progmem and PSRAM share the same SPI bus for read and write data.
+
+* Bounce Buffer Mode
+  * Pixelclock at 18 MHz
+  * Fluent medium animations
+  * Lack of performance in slide and scroll
+* Double Buffer Mode
+  * Pixelclock at 14 MHz
+  * Fluent medium animations
+  * Slide and scroll more fluent
+
+If you are facing issues in panel distortion or glitchy animations in your project, this may caused by the DMA/SPI bottleneck, so you must reduce the pixelclock.
+
+In bounce buffer mode, be aware of the lvgl draw buffer which is located in the internal RAM by default and may cause OOM issues.
 
 ## Branches
 
