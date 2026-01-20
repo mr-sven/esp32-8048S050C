@@ -9,6 +9,11 @@ menu "Sunton ESP32-S3 based display LVGL Package config"
         depends on SUNTON_ESP32_DOUBLE_FB
         default y
 
+    config SUNTON_ESP32_USE_BOUNCE_BUFFER
+        bool "Use bounce buffer"
+        depends on SUNTON_ESP32_DOUBLE_FB=n
+        default n
+
     config LVGL_TASK_MAX_DELAY_MS
         int "LVGL Port Task max delay in MS"
         default 500
