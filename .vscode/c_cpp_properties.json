@@ -2,21 +2,14 @@
   "configurations": [
     {
       "name": "ESP-IDF",
-      "compilerPath": "${config:idf.toolsPath}/tools/xtensa-esp-elf/esp-14.2.0_20251107/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc",
-      "compileCommands": "${workspaceFolder}/build/compile_commands.json",
+      "compilerPath": "~/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20251107/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc",
+      "compileCommands": "${config:idf.buildPath}/compile_commands.json",
       "includePath": [
-        "${config:idf.espIdfPath}/components/**",
-        "${config:idf.espIdfPathWin}/components/**",
-        "${config:idf.espAdfPath}/components/**",
-        "${config:idf.espAdfPathWin}/components/**",
+        "${config:idf.currentSetup}/components/**",
         "${workspaceFolder}/**"
       ],
       "browse": {
         "path": [
-          "${config:idf.espIdfPath}/components",
-          "${config:idf.espIdfPathWin}/components",
-          "${config:idf.espAdfPath}/components/**",
-          "${config:idf.espAdfPathWin}/components/**",
           "${workspaceFolder}"
         ],
         "limitSymbolsToIncludedHeaders": false
